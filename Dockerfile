@@ -7,7 +7,7 @@ WORKDIR /app
 COPY . /app
 
 # Install dependencies
-RUN pip install flask psycopg2-binary apscheduler
+RUN pip install flask psycopg2-binary apscheduler requests
 
 # Expose the Flask port
 EXPOSE 5000

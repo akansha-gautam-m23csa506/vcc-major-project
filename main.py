@@ -3,6 +3,8 @@ import random
 import psycopg2
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
+import requests
+import json
 
 # HTML content for the front end
 HTML_TEMPLATE = """
@@ -107,8 +109,12 @@ HTML_TEMPLATE = """
                 .then(response => response.json())
                 .then(data => {
                     const log = document.getElementById("response");
-                    const newEntry = `Logged: Time - ${data.click_time}, Value - ${data.random_value}\n`;
-                    log.innerText = newEntry + log.innerText;
+                    let newEntries = "";
+                    data.forEach(entry => {
+                        const singleEntry = `Logged: Time - ${entry.click_time}, Value - ${entry.random_value}\nAPI Response - ${entry.api_response}\n\n`;
+                        newEntries += singleEntry;
+                    });
+                    log.innerText = newEntries + log.innerText;
                 })
                 .catch(error => console.error('Error:', error));
         }
@@ -141,20 +147,50 @@ def handle_click():
 
 def log_click():
     click_time = datetime.now()
-    random_value = random.randint(500, 1000)
+    random_value1 = random.randint(200, 1000)
+    random_value2 = random.randint(200, 1000)
+    server_names = [("demo-api", random_value1), ("demo-api-2", random_value2)]
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
-        cur.execute("INSERT INTO clicks (click_time, random_value) VALUES (%s, %s)", (click_time, random_value))
+
+        for server_name, random_value in server_names:
+            cur.execute("INSERT INTO clicks2 (server_name, click_time, random_value) VALUES (%s, %s, %s)", (server_name, click_time, random_value))
 
         # Delete old records (older than 2 days)
         cutoff = datetime.now() - timedelta(days=2)
-        cur.execute("DELETE FROM clicks WHERE click_time < %s", (cutoff,))
+        cur.execute("DELETE FROM clicks2 WHERE click_time < %s", (cutoff,))
 
         conn.commit()
         cur.close()
         conn.close()
-        return jsonify({'click_time': click_time.isoformat(), 'random_value': random_value})
+
+        # Call the two APIs
+        api1_url = "http://34.16.144.114:30080/"
+        api2_url = "http://34.16.144.114:30090/"
+
+        try:
+            api1_response = json.loads(requests.get(api1_url, timeout=5).text.strip()).get("message", "")
+        except Exception as e:
+            api1_response = f"Error contacting API1: {e}"
+
+        try:
+            api2_response = json.loads(requests.get(api2_url, timeout=5).text.strip()).get("message", "")
+        except Exception as e:
+            api2_response = f"Error contacting API2: {e}"
+
+        final_response = []
+        api_responses = [api1_response, api2_response]
+        for i in range(len(server_names)):
+            final_response.append(
+                {
+                    'click_time': click_time.isoformat(),
+                    'random_value': server_names[i][1],
+                    "api_response": api_responses[i]
+                }
+            )
+
+        return jsonify(final_response)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -162,7 +198,6 @@ def log_click():
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=log_click, trigger="interval", hours=1)
 scheduler.start()
-
 
 import atexit
 atexit.register(lambda: scheduler.shutdown())
