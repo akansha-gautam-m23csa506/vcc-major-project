@@ -27,6 +27,7 @@ A simple Flask web app that logs button clicks to a PostgreSQL database hosted o
 ```sql
 CREATE TABLE clicks (
   id SERIAL PRIMARY KEY,
+  server_name VARCHAR NOT NULL,
   click_time TIMESTAMP NOT NULL,
   random_value INTEGER NOT NULL
 );
