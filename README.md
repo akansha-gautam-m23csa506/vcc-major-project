@@ -1,10 +1,10 @@
-# 🐍 Flask Click Logger App
+# Flask Click Logger App
 
 A simple Flask web app that logs button clicks to a PostgreSQL database hosted on GCP. Each click stores a timestamp and a random number between 500 and 1000.
 
 ---
 
-## 📦 Features
+## Features
 
 - Web-based UI with a button
 - Logs each click with:
@@ -15,7 +15,7 @@ A simple Flask web app that logs button clicks to a PostgreSQL database hosted o
 
 ---
 
-## 🔧 Prerequisites
+## Prerequisites
 
 - GCP VM (Ubuntu recommended)
 - Docker installed on the VM
@@ -32,7 +32,7 @@ CREATE TABLE clicks (
 );
 ```
 
-## 🚀 Deployment 
+## Deployment 
 
 - Clone the code
 - cd into the directory
